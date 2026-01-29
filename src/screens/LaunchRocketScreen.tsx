@@ -73,12 +73,14 @@ export default function LaunchRocketScreen({ navigation }: Props) {
 
   const sidePad = isVerySmall ? 14 : 18;
 
-  const statusH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
-  const androidTopExtra = Platform.OS === 'android' ? 10 : 0;
+  const topPad =
+    Platform.OS === 'ios'
+      ? insets.top + 20
+      : (StatusBar.currentHeight ?? 0) + 10;
 
   const topBarH = 34;
-  const topBarPadV = 10;
-  const headerH = statusH + androidTopExtra + topBarH + topBarPadV;
+  const topBarGap = 10;
+  const headerH = topPad + topBarH + topBarGap;
 
   const hudH = isVerySmall ? 44 : 48;
   const hudTopGap = isVerySmall ? 8 : 10;
@@ -90,7 +92,7 @@ export default function LaunchRocketScreen({ navigation }: Props) {
   const boardTopGap = isVerySmall ? 8 : 10;
 
   const availableForBoard =
-    H - (insets.top + headerH) - (hudTopGap + hudH) - boardTopGap - (controlsH + controlsBottomPad) - 8;
+    H - headerH - (hudTopGap + hudH) - boardTopGap - (controlsH + controlsBottomPad) - 8;
 
   const boardH = Math.max(230, Math.floor(availableForBoard));
   const boardW = W - sidePad * 2;
@@ -385,280 +387,284 @@ export default function LaunchRocketScreen({ navigation }: Props) {
   const lifeStar = (on: boolean) => <Text style={[styles.lifeStar, !on && styles.lifeStarOff]}>★</Text>;
 
   const overlayLeft = pickCardLayout ? pickCardLayout.x + pickCardLayout.width / 2 - 80 : W / 2 - 80;
-  const overlayTop = pickCardLayout ? pickCardLayout.y - (isVerySmall ? 72 : 84) : Math.max(insets.top + 90, 140);
+  const overlayTop = pickCardLayout
+    ? pickCardLayout.y - (isVerySmall ? 72 : 84)
+    : Math.max(topPad + 90, 140);
 
   return (
     <ImageBackground source={BG} resizeMode="cover" style={styles.bg}>
-      <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-        <View style={[styles.topBar, { paddingHorizontal: sidePad, paddingTop: statusH + androidTopExtra }]}>
-          <Pressable
-            onPress={() => {
-              stopLoop();
-              navigation.goBack();
-            }}
-            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          >
-            <Text style={styles.backIcon}>‹</Text>
-          </Pressable>
-
-          <View style={styles.titlePill}>
-            <Text style={styles.titlePillText}>Launch Rocket</Text>
-          </View>
-
-          <View style={styles.rightHud}>
-            {lifeStar(lives >= 1)}
-            {lifeStar(lives >= 2)}
-            {lifeStar(lives >= 3)}
-          </View>
-        </View>
-      </SafeAreaView>
-
-      {rocketOverlayVisible && (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <Animated.Image
-            source={ROCKETS[selectedRocket]}
-            style={[
-              styles.rocketOverlayImg,
-              {
-                position: 'absolute',
-                left: overlayLeft,
-                top: overlayTop,
-                opacity: rocketOverlayOpacity,
-                transform: [{ translateY: rocketOverlayTranslateY }, { scale: rocketOverlayScale }],
-              },
-            ]}
-          />
-        </View>
-      )}
-
-      <Animated.View pointerEvents="none" style={[styles.twinkle, { opacity: twinkleOpacity }]} />
-
-      {mode === 'pick' && (
+      <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
         <View style={{ flex: 1 }}>
-          <View style={{ height: isVerySmall ? 18 : 30 }} />
-
-          <View onLayout={(e) => setPickCardLayout(e.nativeEvent.layout)} style={[styles.pickCard, { marginHorizontal: sidePad }]}>
-            <Text style={[styles.h1, { fontSize: isVerySmall ? 20 : 22 }]}>Choose your rocket</Text>
-
-            <View style={{ height: isVerySmall ? 12 : 14 }} />
-
-            <View style={styles.rocketGrid}>
-              {(['nova', 'stellar', 'cosmic', 'galaxy'] as const).map((id) => {
-                const selected = id === selectedRocket;
-                return (
-                  <Pressable
-                    key={id}
-                    onPress={() => setSelectedRocket(id)}
-                    style={({ pressed }) => [
-                      styles.rocketTile,
-                      isVerySmall && styles.rocketTileSmall,
-                      selected && styles.rocketTileSelected,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Image source={ROCKETS[id]} style={[styles.rocketTileImg, isVerySmall && styles.rocketTileImgSmall]} />
-                    <Text style={[styles.rocketTileText, isVerySmall && styles.rocketTileTextSmall]}>
-                      {id === 'nova' ? 'Nova One' : id === 'stellar' ? 'Stellar X' : id === 'cosmic' ? 'Cosmic V' : 'Galaxy Prime'}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={{ height: isVerySmall ? 12 : 14 }} />
-
-            <Text style={[styles.helpText, isVerySmall && styles.helpTextSmall]}>
-              Avoid planets.{"\n"}If a planet hits your rocket — you lose a life.{"\n"}Survive 30 seconds to win the round.
-            </Text>
-          </View>
-
-          <View style={{ flex: 1 }} />
-
-          <View style={{ paddingHorizontal: sidePad, paddingBottom: Math.max(16, insets.bottom + 14) + (isVerySmall ? 26 : 40) }}>
-            <Pressable onPress={startGame} style={({ pressed }) => [styles.bigBtn, pressed && styles.pressed]}>
-              <Text style={styles.bigBtnText}>Start</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {mode === 'play' && (
-        <View style={{ flex: 1 }}>
-          <View style={{ height: hudTopGap }} />
-
-          <View style={[styles.hud, { marginHorizontal: sidePad, height: hudH }]}>
-            <View style={styles.hudPill}>
-              <Text style={styles.hudLabel}>Round</Text>
-              <Text style={styles.hudValue}>
-                {round}/{TOTAL_ROUNDS}
-              </Text>
-            </View>
-
-            <View style={styles.hudPill}>
-              <Text style={styles.hudLabel}>Time</Text>
-              <Text style={styles.hudValue}>{timeLeft}s</Text>
-            </View>
-
-            <View style={styles.hudPill}>
-              <Text style={styles.hudLabel}>Lives</Text>
-              <Text style={styles.hudValue}>{lives}/3</Text>
-            </View>
-          </View>
-
-          <View style={{ height: boardTopGap }} />
-
-          <View style={[styles.board, { marginHorizontal: sidePad, width: boardW, height: boardH }]}>
-            {planets.map((p) => {
-              const x = colCenterX(p.col) - p.size / 2;
-              return (
-                <Image
-                  key={p.id}
-                  source={p.sprite}
-                  style={{ position: 'absolute', left: x, top: p.y, width: p.size, height: p.size, resizeMode: 'contain' }}
-                />
-              );
-            })}
-
-            <Image
-              source={ROCKETS[selectedRocket]}
-              style={{
-                position: 'absolute',
-                left: rocketX,
-                top: rocketY,
-                width: rocketW,
-                height: rocketH,
-                resizeMode: 'contain',
+          <View style={[styles.topBar, { paddingHorizontal: sidePad, paddingTop: topPad, height: headerH }]}>
+            <Pressable
+              onPress={() => {
+                stopLoop();
+                navigation.goBack();
               }}
-            />
+              style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.backIcon}>‹</Text>
+            </Pressable>
 
-            <View style={styles.guides}>
-              {Array.from({ length: COLS }).map((_, i) => (
-                <View
-                  key={i}
+            <View style={styles.titlePill}>
+              <Text style={styles.titlePillText}>Launch Rocket</Text>
+            </View>
+
+            <View style={styles.rightHud}>
+              {lifeStar(lives >= 1)}
+              {lifeStar(lives >= 2)}
+              {lifeStar(lives >= 3)}
+            </View>
+          </View>
+
+          {rocketOverlayVisible && (
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <Animated.Image
+                source={ROCKETS[selectedRocket]}
+                style={[
+                  styles.rocketOverlayImg,
+                  {
+                    position: 'absolute',
+                    left: overlayLeft,
+                    top: overlayTop,
+                    opacity: rocketOverlayOpacity,
+                    transform: [{ translateY: rocketOverlayTranslateY }, { scale: rocketOverlayScale }],
+                  },
+                ]}
+              />
+            </View>
+          )}
+
+          <Animated.View pointerEvents="none" style={[styles.twinkle, { opacity: twinkleOpacity }]} />
+
+          {mode === 'pick' && (
+            <View style={{ flex: 1 }}>
+              <View style={{ height: isVerySmall ? 18 : 30 }} />
+
+              <View onLayout={(e) => setPickCardLayout(e.nativeEvent.layout)} style={[styles.pickCard, { marginHorizontal: sidePad }]}>
+                <Text style={[styles.h1, { fontSize: isVerySmall ? 20 : 22 }]}>Choose your rocket</Text>
+
+                <View style={{ height: isVerySmall ? 12 : 14 }} />
+
+                <View style={styles.rocketGrid}>
+                  {(['nova', 'stellar', 'cosmic', 'galaxy'] as const).map((id) => {
+                    const selected = id === selectedRocket;
+                    return (
+                      <Pressable
+                        key={id}
+                        onPress={() => setSelectedRocket(id)}
+                        style={({ pressed }) => [
+                          styles.rocketTile,
+                          isVerySmall && styles.rocketTileSmall,
+                          selected && styles.rocketTileSelected,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Image source={ROCKETS[id]} style={[styles.rocketTileImg, isVerySmall && styles.rocketTileImgSmall]} />
+                        <Text style={[styles.rocketTileText, isVerySmall && styles.rocketTileTextSmall]}>
+                          {id === 'nova' ? 'Nova One' : id === 'stellar' ? 'Stellar X' : id === 'cosmic' ? 'Cosmic V' : 'Galaxy Prime'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View style={{ height: isVerySmall ? 12 : 14 }} />
+
+                <Text style={[styles.helpText, isVerySmall && styles.helpTextSmall]}>
+                  Avoid planets.{"\n"}If a planet hits your rocket — you lose a life.{"\n"}Survive 30 seconds to win the round.
+                </Text>
+              </View>
+
+              <View style={{ flex: 1 }} />
+
+              <View style={{ paddingHorizontal: sidePad, paddingBottom: Math.max(16, insets.bottom + 14) + (isVerySmall ? 26 : 40) }}>
+                <Pressable onPress={startGame} style={({ pressed }) => [styles.bigBtn, pressed && styles.pressed]}>
+                  <Text style={styles.bigBtnText}>Start</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {mode === 'play' && (
+            <View style={{ flex: 1 }}>
+              <View style={{ height: hudTopGap }} />
+
+              <View style={[styles.hud, { marginHorizontal: sidePad, height: hudH }]}>
+                <View style={styles.hudPill}>
+                  <Text style={styles.hudLabel}>Round</Text>
+                  <Text style={styles.hudValue}>
+                    {round}/{TOTAL_ROUNDS}
+                  </Text>
+                </View>
+
+                <View style={styles.hudPill}>
+                  <Text style={styles.hudLabel}>Time</Text>
+                  <Text style={styles.hudValue}>{timeLeft}s</Text>
+                </View>
+
+                <View style={styles.hudPill}>
+                  <Text style={styles.hudLabel}>Lives</Text>
+                  <Text style={styles.hudValue}>{lives}/3</Text>
+                </View>
+              </View>
+
+              <View style={{ height: boardTopGap }} />
+
+              <View style={[styles.board, { marginHorizontal: sidePad, width: boardW, height: boardH }]}>
+                {planets.map((p) => {
+                  const x = colCenterX(p.col) - p.size / 2;
+                  return (
+                    <Image
+                      key={p.id}
+                      source={p.sprite}
+                      style={{ position: 'absolute', left: x, top: p.y, width: p.size, height: p.size, resizeMode: 'contain' }}
+                    />
+                  );
+                })}
+
+                <Image
+                  source={ROCKETS[selectedRocket]}
                   style={{
-                    width: 1,
-                    height: '100%',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    marginLeft: i === 0 ? 0 : cellW - 1,
+                    position: 'absolute',
+                    left: rocketX,
+                    top: rocketY,
+                    width: rocketW,
+                    height: rocketH,
+                    resizeMode: 'contain',
                   }}
                 />
-              ))}
+
+                <View style={styles.guides}>
+                  {Array.from({ length: COLS }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={{
+                        width: 1,
+                        height: '100%',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        marginLeft: i === 0 ? 0 : cellW - 1,
+                      }}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ flex: 1 }} />
+
+              <View style={[styles.controls, { paddingHorizontal: sidePad, paddingBottom: controlsBottomPad }]}>
+                <Pressable onPress={goLeft} style={({ pressed }) => [styles.ctrlBtn, pressed && styles.pressed]}>
+                  <Text style={styles.ctrlIcon}>‹</Text>
+                </Pressable>
+
+                <View style={styles.centerInfo}>
+                  <Text style={styles.centerInfoText}>Avoid planets</Text>
+                  <Text style={styles.centerInfoSub}>Survive the timer</Text>
+                </View>
+
+                <Pressable onPress={goRight} style={({ pressed }) => [styles.ctrlBtn, pressed && styles.pressed]}>
+                  <Text style={styles.ctrlIcon}>›</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-
-          <View style={{ flex: 1 }} />
-
-          <View style={[styles.controls, { paddingHorizontal: sidePad, paddingBottom: controlsBottomPad, height: controlsH + controlsBottomPad }]}>
-            <Pressable onPress={goLeft} style={({ pressed }) => [styles.ctrlBtn, pressed && styles.pressed]}>
-              <Text style={styles.ctrlIcon}>‹</Text>
-            </Pressable>
-
-            <View style={styles.centerInfo}>
-              <Text style={styles.centerInfoText}>Avoid planets</Text>
-              <Text style={styles.centerInfoSub}>Survive the timer</Text>
-            </View>
-
-            <Pressable onPress={goRight} style={({ pressed }) => [styles.ctrlBtn, pressed && styles.pressed]}>
-              <Text style={styles.ctrlIcon}>›</Text>
-            </Pressable>
-          </View>
+          )}
         </View>
-      )}
 
-      <Modal visible={mode === 'roundWin'} transparent animationType="fade" onRequestClose={() => {}}>
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Round {round} complete</Text>
-            <Text style={styles.modalLine}>You survived the mission.</Text>
+        <Modal visible={mode === 'roundWin'} transparent animationType="fade" onRequestClose={() => {}}>
+          <View style={styles.overlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Round {round} complete</Text>
+              <Text style={styles.modalLine}>You survived the mission.</Text>
 
-            <View style={{ height: 14 }} />
+              <View style={{ height: 14 }} />
 
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                onPress={() => {
-                  stopLoop();
-                  setMode('pick');
-                }}
-                style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
-              >
-                <Text style={styles.smallBtnText}>Menu</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable
+                  onPress={() => {
+                    stopLoop();
+                    setMode('pick');
+                  }}
+                  style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
+                >
+                  <Text style={styles.smallBtnText}>Menu</Text>
+                </Pressable>
 
-              <Pressable onPress={goToNextRound} style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}>
-                <Text style={styles.smallBtnText}>Next round</Text>
-              </Pressable>
+                <Pressable onPress={goToNextRound} style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}>
+                  <Text style={styles.smallBtnText}>Next round</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Modal visible={mode === 'roundLose'} transparent animationType="fade" onRequestClose={() => {}}>
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Mission failed</Text>
-            <Text style={styles.modalLine}>You ran out of lives.</Text>
+        <Modal visible={mode === 'roundLose'} transparent animationType="fade" onRequestClose={() => {}}>
+          <View style={styles.overlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Mission failed</Text>
+              <Text style={styles.modalLine}>You ran out of lives.</Text>
 
-            <View style={{ height: 14 }} />
+              <View style={{ height: 14 }} />
 
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                onPress={() => {
-                  stopLoop();
-                  setMode('pick');
-                }}
-                style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
-              >
-                <Text style={styles.smallBtnText}>Menu</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable
+                  onPress={() => {
+                    stopLoop();
+                    setMode('pick');
+                  }}
+                  style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
+                >
+                  <Text style={styles.smallBtnText}>Menu</Text>
+                </Pressable>
 
-              <Pressable onPress={retryRound} style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}>
-                <Text style={styles.smallBtnText}>Retry</Text>
-              </Pressable>
+                <Pressable onPress={retryRound} style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}>
+                  <Text style={styles.smallBtnText}>Retry</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Modal visible={mode === 'gameWin'} transparent animationType="fade" onRequestClose={() => {}}>
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>You win!</Text>
-            <Text style={styles.modalLine}>All rounds completed.</Text>
+        <Modal visible={mode === 'gameWin'} transparent animationType="fade" onRequestClose={() => {}}>
+          <View style={styles.overlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>You win!</Text>
+              <Text style={styles.modalLine}>All rounds completed.</Text>
 
-            <View style={{ height: 14 }} />
+              <View style={{ height: 14 }} />
 
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                onPress={() => {
-                  stopLoop();
-                  setMode('pick');
-                }}
-                style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
-              >
-                <Text style={styles.smallBtnText}>Menu</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable
+                  onPress={() => {
+                    stopLoop();
+                    setMode('pick');
+                  }}
+                  style={({ pressed }) => [styles.smallBtn, styles.smallBtnDark, pressed && styles.pressed]}
+                >
+                  <Text style={styles.smallBtnText}>Menu</Text>
+                </Pressable>
 
-              <Pressable
-                onPress={() => {
-                  stopLoop();
-                  resetRoundState(1);
-                  startGame();
-                }}
-                style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}
-              >
-                <Text style={styles.smallBtnText}>Restart</Text>
-              </Pressable>
+                <Pressable
+                  onPress={() => {
+                    stopLoop();
+                    resetRoundState(1);
+                    startGame();
+                  }}
+                  style={({ pressed }) => [styles.smallBtn, pressed && styles.pressed]}
+                >
+                  <Text style={styles.smallBtnText}>Restart</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </SafeAreaView>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: '#000' },
-  safe: { backgroundColor: 'transparent' },
+  safe: { flex: 1, backgroundColor: 'transparent' },
   pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
 
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

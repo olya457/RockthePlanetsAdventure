@@ -137,18 +137,32 @@ const BANK: Record<PlanetId, Q[]> = {
 
 type Mode = 'select' | 'quiz';
 
+const PURPLE = '#5A18E6';
+const YELLOW = '#FFC83D';
+
 export default function StarExchangeScreen({ navigation }: Props) {
   const { height: H, width: W } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
   const isVerySmall = H < 680;
   const isSmall = H < 740;
-
   const sidePad = isVerySmall ? 14 : 18;
 
+  const statusH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
   const androidTopDown = Platform.OS === 'android' ? 10 : 0;
   const androidBottomUp = Platform.OS === 'android' ? 10 : 0;
-  const statusH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
+
+  const iosExtraTop = Platform.OS === 'ios' ? 20 : 0;
+
+  const TOP_PAD = Platform.OS === 'android' ? statusH + androidTopDown : insets.top + iosExtraTop;
+
+  const TOP_BAR_H = 34;
+  const TOP_BAR_GAP_AFTER = isVerySmall ? 10 : 12;
+  const HEADER_TOTAL_H = TOP_PAD + TOP_BAR_H + TOP_BAR_GAP_AFTER;
+
+  const bottomInsetAndroid = Platform.OS === 'android'
+    ? (insets.bottom + androidBottomUp)
+    : insets.bottom;
 
   const planetSizeSelect = Math.min(isVerySmall ? 210 : isSmall ? 240 : 270, W * 0.70);
   const planetSizeQuiz = Math.min(isVerySmall ? 185 : isSmall ? 205 : 235, W * 0.62);
@@ -284,13 +298,10 @@ export default function StarExchangeScreen({ navigation }: Props) {
   const rocketSize = Math.min(isVerySmall ? 150 : 180, Math.round(W * 0.48));
   const rocketLeft = Math.round(W * 0.5 - rocketSize * 0.5);
 
-  const topInsetAndroid = Platform.OS === 'android' ? statusH + androidTopDown : 0;
-  const bottomInsetAndroid = Platform.OS === 'android' ? (insets.bottom + androidBottomUp) : insets.bottom;
-
   return (
     <ImageBackground source={BG} resizeMode="cover" style={styles.bg}>
       <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-        <View style={[styles.topRow, { paddingHorizontal: sidePad, paddingTop: topInsetAndroid }]}>
+        <View style={[styles.topRow, { paddingHorizontal: sidePad, paddingTop: TOP_PAD }]}>
           <Pressable
             disabled={isAnimating}
             onPress={() => {
@@ -319,15 +330,39 @@ export default function StarExchangeScreen({ navigation }: Props) {
       </SafeAreaView>
 
       {mode === 'select' && (
-        <View style={{ flex: 1, paddingHorizontal: sidePad, paddingBottom: Math.max(16, bottomInsetAndroid) }}>
+        <View
+          style={{
+            flex: 1,
+            paddingHorizontal: sidePad,
+            paddingBottom: Math.max(16, bottomInsetAndroid),
+            paddingTop: TOP_BAR_GAP_AFTER,
+          }}
+        >
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Pressable disabled={isAnimating} onPress={goPrev} style={({ pressed }) => [styles.arrowBtnLeft, pressed && !isAnimating && styles.pressed]}>
+            <Pressable
+              disabled={isAnimating}
+              onPress={goPrev}
+              style={({ pressed }) => [
+                styles.arrowBtnLeft,
+                pressed && !isAnimating && styles.pressed,
+              ]}
+            >
               <Text style={styles.arrowText}>‹</Text>
             </Pressable>
 
-            <Image source={IMG[selected]} style={{ width: planetSizeSelect, height: planetSizeSelect, resizeMode: 'contain' }} />
+            <Image
+              source={IMG[selected]}
+              style={{ width: planetSizeSelect, height: planetSizeSelect, resizeMode: 'contain' }}
+            />
 
-            <Pressable disabled={isAnimating} onPress={goNext} style={({ pressed }) => [styles.arrowBtnRight, pressed && !isAnimating && styles.pressed]}>
+            <Pressable
+              disabled={isAnimating}
+              onPress={goNext}
+              style={({ pressed }) => [
+                styles.arrowBtnRight,
+                pressed && !isAnimating && styles.pressed,
+              ]}
+            >
               <Text style={styles.arrowText}>›</Text>
             </Pressable>
           </View>
@@ -336,12 +371,18 @@ export default function StarExchangeScreen({ navigation }: Props) {
             <Pressable
               disabled={isAnimating}
               onPress={startQuizWithRocket}
-              style={({ pressed }) => [styles.startBtn, pressed && !isAnimating && styles.pressed, isAnimating && styles.disabled]}
+              style={({ pressed }) => [
+                styles.startBtn,
+                pressed && !isAnimating && styles.pressed,
+                isAnimating && styles.disabled,
+              ]}
             >
               <Text style={[styles.startText, { fontSize: isVerySmall ? 13.5 : 14 }]}>Start</Text>
             </Pressable>
 
-            <Text style={[styles.subHint, { fontSize: isVerySmall ? 11 : 12 }]}>{selected.toUpperCase()} • 10 Questions</Text>
+            <Text style={[styles.subHint, { fontSize: isVerySmall ? 11 : 12 }]}>
+              {selected.toUpperCase()} • 10 Questions
+            </Text>
           </View>
         </View>
       )}
@@ -350,12 +391,15 @@ export default function StarExchangeScreen({ navigation }: Props) {
         <View
           style={{
             flex: 1,
-            marginTop: (isVerySmall ? 52 : 60) + androidTopDown,
+            marginTop: HEADER_TOTAL_H,
             paddingBottom: Math.max(14, bottomInsetAndroid),
           }}
         >
           <View style={{ paddingTop: isVerySmall ? 14 : 22, alignItems: 'center' }}>
-            <Image source={IMG[selected]} style={{ width: planetSizeQuiz, height: planetSizeQuiz, resizeMode: 'contain' }} />
+            <Image
+              source={IMG[selected]}
+              style={{ width: planetSizeQuiz, height: planetSizeQuiz, resizeMode: 'contain' }}
+            />
           </View>
 
           <View
@@ -398,7 +442,9 @@ export default function StarExchangeScreen({ navigation }: Props) {
           <Modal visible={done} transparent animationType="fade">
             <View style={styles.overlay}>
               <View style={[styles.doneCard, { padding: isVerySmall ? 14 : 16 }]}>
-                <Text style={[styles.doneTitle, { fontSize: isVerySmall ? 17 : 18 }]}>{win ? 'Well done!' : 'Mission failed'}</Text>
+                <Text style={[styles.doneTitle, { fontSize: isVerySmall ? 17 : 18 }]}>
+                  {win ? 'Well done!' : 'Mission failed'}
+                </Text>
                 <Text style={[styles.doneSub, { fontSize: isVerySmall ? 12.5 : 13 }]}>Stars collected:</Text>
                 <Text style={[styles.doneStars, { fontSize: isVerySmall ? 17 : 18 }]}>x {stars}</Text>
 
@@ -443,7 +489,10 @@ export default function StarExchangeScreen({ navigation }: Props) {
                     <Text style={styles.exitBtnText}>Yes</Text>
                   </Pressable>
 
-                  <Pressable onPress={() => setExitAsk(false)} style={({ pressed }) => [styles.exitBtn, styles.exitGreen, pressed && styles.pressed]}>
+                  <Pressable
+                    onPress={() => setExitAsk(false)}
+                    style={({ pressed }) => [styles.exitBtn, styles.exitGreen, pressed && styles.pressed]}
+                  >
                     <Text style={styles.exitBtnText}>No</Text>
                   </Pressable>
                 </View>
@@ -472,9 +521,6 @@ export default function StarExchangeScreen({ navigation }: Props) {
     </ImageBackground>
   );
 }
-
-const PURPLE = '#5A18E6';
-const YELLOW = '#FFC83D';
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: '#000' },

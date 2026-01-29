@@ -1,4 +1,4 @@
-package com.rocktheplanetsadventure
+package com.rock.the.planets.adventure
 
 import android.app.Application
 import com.facebook.react.PackageList

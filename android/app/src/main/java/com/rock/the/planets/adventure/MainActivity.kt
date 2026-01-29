@@ -1,4 +1,4 @@
-package com.rocktheplanetsadventure
+package com.rock.the.planets.adventure
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
